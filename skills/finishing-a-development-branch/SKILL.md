@@ -1,200 +1,194 @@
 ---
 name: finishing-a-development-branch
-description: Use when implementation is complete, all tests pass, and you need to decide how to integrate the work - guides completion of development work by presenting structured options for merge, PR, or cleanup
+description: Use when completing feature work in PROMPT-APP to verify, merge, and clean up
 ---
 
-# Finishing a Development Branch
+# Finishing a Development Branch for PROMPT-APP
 
 ## Overview
 
-Guide completion of development work by presenting clear options and handling chosen workflow.
+Verify tests, present options (merge/PR/keep/discard), clean up worktree.
 
-**Core principle:** Verify tests → Present options → Execute choice → Clean up.
+**Core principle:** Every branch must be properly finished - merged, reviewed, or discarded.
 
-**Announce at start:** "I'm using the finishing-a-development-branch skill to complete this work."
+## When to Use
+
+**Always, after completing any feature or bug fix:**
+- All tasks from plan complete
+- Ready to integrate changes
+- Need to decide what to do with branch
+
+**No exceptions.** Don't leave branches hanging.
 
 ## The Process
 
-### Step 1: Verify Tests
-
-**Before presenting options, verify tests pass:**
+### 1. Verify All Tests Pass
 
 ```bash
-# Run project's test suite
-npm test / cargo test / pytest / go test ./...
+npm test
 ```
 
-**If tests fail:**
-```
-Tests failing (<N> failures). Must fix before completing:
+Confirm:
+- All tests pass
+- No new failures
+- Coverage maintained
 
-[Show failures]
+**If tests fail:** Fix them before proceeding.
 
-Cannot proceed with merge/PR until tests pass.
-```
-
-Stop. Don't proceed to Step 2.
-
-**If tests pass:** Continue to Step 2.
-
-### Step 2: Determine Base Branch
+### 2. Run Build
 
 ```bash
-# Try common base branches
-git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null
+npm run build
 ```
 
-Or ask: "This branch split from main - is that correct?"
+Confirm:
+- Build succeeds
+- No TypeScript errors
+- Bundle size acceptable
 
-### Step 3: Present Options
+**If build fails:** Fix it before proceeding.
 
-Present exactly these 4 options:
-
-```
-Implementation complete. What would you like to do?
-
-1. Merge back to <base-branch> locally
-2. Push and create a Pull Request
-3. Keep the branch as-is (I'll handle it later)
-4. Discard this work
-
-Which option?
-```
-
-**Don't add explanation** - keep options concise.
-
-### Step 4: Execute Choice
-
-#### Option 1: Merge Locally
+### 3. Check Code Quality
 
 ```bash
-# Switch to base branch
-git checkout <base-branch>
-
-# Pull latest
-git pull
-
-# Merge feature branch
-git merge <feature-branch>
-
-# Verify tests on merged result
-<test command>
-
-# If tests pass
-git branch -d <feature-branch>
+npm run lint
 ```
 
-Then: Cleanup worktree (Step 5)
+Confirm:
+- No style errors
+- Code follows conventions
+- No warnings
 
-#### Option 2: Push and Create PR
+**If lint fails:** Fix it before proceeding.
+
+### 4. Review Changes
 
 ```bash
-# Push branch
-git push -u origin <feature-branch>
-
-# Create PR
-gh pr create --title "<title>" --body "$(cat <<'EOF'
-## Summary
-<2-3 bullets of what changed>
-
-## Test Plan
-- [ ] <verification steps>
-EOF
-)"
+git diff main..HEAD
 ```
 
-Then: Cleanup worktree (Step 5)
+Review:
+- What changed?
+- Is it complete?
+- Any TODOs left?
+- Documentation updated?
 
-#### Option 3: Keep As-Is
+### 5. Present Options to Human Partner
 
-Report: "Keeping branch <name>. Worktree preserved at <path>."
+Show summary and ask:
 
-**Don't cleanup worktree.**
+**"Branch ready. Options:**
+
+1. **Merge to main** - Direct merge (for small, safe changes)
+2. **Create Pull Request** - For review (recommended for larger changes)
+3. **Keep branch** - Continue working later
+4. **Discard** - Abandon this work
+
+**Which option?"**
+
+### 6. Execute Chosen Option
+
+#### Option 1: Merge to Main
+
+```bash
+git checkout main
+git merge feature/feature-name
+git branch -d feature/feature-name
+git worktree remove ../prompt-app-feature-name
+```
+
+#### Option 2: Create Pull Request
+
+```bash
+git push origin feature/feature-name
+# Open PR on GitHub/GitLab
+# Keep worktree for now
+```
+
+#### Option 3: Keep Branch
+
+```bash
+# Do nothing, leave worktree intact
+echo "Worktree preserved at ../prompt-app-feature-name"
+```
 
 #### Option 4: Discard
 
-**Confirm first:**
-```
-This will permanently delete:
-- Branch <name>
-- All commits: <commit-list>
-- Worktree at <path>
-
-Type 'discard' to confirm.
-```
-
-Wait for exact confirmation.
-
-If confirmed:
 ```bash
-git checkout <base-branch>
-git branch -D <feature-branch>
+git checkout main
+git branch -D feature/feature-name
+git worktree remove ../prompt-app-feature-name
 ```
 
-Then: Cleanup worktree (Step 5)
+### 7. Clean Up
 
-### Step 5: Cleanup Worktree
+After merge or discard:
+- Remove worktree
+- Delete branch (if merged)
+- Update project tracking
 
-**For Options 1, 2, 4:**
+## Verification Checklist
 
-Check if in worktree:
-```bash
-git worktree list | grep $(git branch --show-current)
-```
+Before presenting options:
 
-If yes:
-```bash
-git worktree remove <worktree-path>
-```
-
-**For Option 3:** Keep worktree.
-
-## Quick Reference
-
-| Option | Merge | Push | Keep Worktree | Cleanup Branch |
-|--------|-------|------|---------------|----------------|
-| 1. Merge locally | ✓ | - | - | ✓ |
-| 2. Create PR | - | ✓ | ✓ | - |
-| 3. Keep as-is | - | - | ✓ | - |
-| 4. Discard | - | - | - | ✓ (force) |
-
-## Common Mistakes
-
-**Skipping test verification**
-- **Problem:** Merge broken code, create failing PR
-- **Fix:** Always verify tests before offering options
-
-**Open-ended questions**
-- **Problem:** "What should I do next?" → ambiguous
-- **Fix:** Present exactly 4 structured options
-
-**Automatic worktree cleanup**
-- **Problem:** Remove worktree when might need it (Option 2, 3)
-- **Fix:** Only cleanup for Options 1 and 4
-
-**No confirmation for discard**
-- **Problem:** Accidentally delete work
-- **Fix:** Require typed "discard" confirmation
+- [ ] All tests pass
+- [ ] Build succeeds
+- [ ] Lint clean
+- [ ] No console errors
+- [ ] Documentation updated
+- [ ] Commit messages clear
+- [ ] No debug code left
+- [ ] No commented-out code
 
 ## Red Flags
 
 **Never:**
-- Proceed with failing tests
-- Merge without verifying tests on result
-- Delete work without confirmation
-- Force-push without explicit request
+- Skip verification steps
+- Merge without human approval
+- Leave worktrees around indefinitely
+- Forget to update documentation
+- Merge failing tests
+- Push directly to main without approval
 
-**Always:**
-- Verify tests before offering options
-- Present exactly 4 options
-- Get typed confirmation for Option 4
-- Clean up worktree for Options 1 & 4 only
+## Example Workflow
 
-## Integration
+```bash
+# Verify
+$ npm test
+✓ All 45 tests passing
 
-**Called by:**
-- **subagent-driven-development** (Step 7) - After all tasks complete
-- **executing-plans** (Step 5) - After all batches complete
+$ npm run build
+✓ Build successful
 
-**Pairs with:**
-- **using-git-worktrees** - Cleans up worktree created by that skill
+$ npm run lint
+✓ No issues found
+
+# Present options
+Branch ready. Options:
+1. Merge to main
+2. Create Pull Request  
+3. Keep branch
+4. Discard
+
+User: "Create Pull Request"
+
+# Execute
+$ git push origin feature/sync-improvement
+$ echo "PR created: https://github.com/org/prompt-app/pull/123"
+```
+
+## Integration with Other Skills
+
+- **using-git-worktrees** → Created worktree at start
+- **subagent-driven-development** → Executes plan in worktree
+- **verification-before-completion** → Verifies before finishing
+- **requesting-code-review** → Part of PR process
+
+## Final Rule
+
+```
+Finished work = Verified + Merged/Discarded + Cleaned up
+Not cleaned up = Not finished
+```
+
+**No exceptions without your human partner's explicit permission.**

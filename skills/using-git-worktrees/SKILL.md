@@ -1,218 +1,156 @@
 ---
 name: using-git-worktrees
-description: Use when starting feature work that needs isolation from current workspace or before executing implementation plans - creates isolated git worktrees with smart directory selection and safety verification
+description: Use when starting new feature work in PROMPT-APP to create isolated development environment
 ---
 
-# Using Git Worktrees
+# Using Git Worktrees for PROMPT-APP
 
 ## Overview
 
-Git worktrees create isolated workspaces sharing the same repository, allowing work on multiple branches simultaneously without switching.
+Create isolated workspace on new branch for each feature. Never work directly on main/master.
 
-**Core principle:** Systematic directory selection + safety verification = reliable isolation.
+**Core principle:** Isolated branches prevent conflicts and enable parallel development.
 
-**Announce at start:** "I'm using the using-git-worktrees skill to set up an isolated workspace."
+## When to Use
 
-## Directory Selection Process
+**Always, before starting any feature or bug fix:**
+- New feature development
+- Bug fixes
+- Experiments
+- Testing ideas
 
-Follow this priority order:
+**No exceptions.** Main/master stays clean.
 
-### 1. Check Existing Directories
+## The Process
 
-```bash
-# Check in priority order
-ls -d .worktrees 2>/dev/null     # Preferred (hidden)
-ls -d worktrees 2>/dev/null      # Alternative
-```
-
-**If found:** Use that directory. If both exist, `.worktrees` wins.
-
-### 2. Check CLAUDE.md
+### 1. Create Worktree
 
 ```bash
-grep -i "worktree.*director" CLAUDE.md 2>/dev/null
+git worktree add ../prompt-app-feature-name -b feature/feature-name
 ```
 
-**If preference specified:** Use it without asking.
+This creates:
+- New branch `feature/feature-name`
+- Separate working directory `../prompt-app-feature-name`
+- Isolated from your current work
 
-### 3. Ask User
-
-If no directory exists and no CLAUDE.md preference:
-
-```
-No worktree directory found. Where should I create worktrees?
-
-1. .worktrees/ (project-local, hidden)
-2. ~/.config/superpowers/worktrees/<project-name>/ (global location)
-
-Which would you prefer?
-```
-
-## Safety Verification
-
-### For Project-Local Directories (.worktrees or worktrees)
-
-**MUST verify directory is ignored before creating worktree:**
+### 2. Navigate to Worktree
 
 ```bash
-# Check if directory is ignored (respects local, global, and system gitignore)
-git check-ignore -q .worktrees 2>/dev/null || git check-ignore -q worktrees 2>/dev/null
+cd ../prompt-app-feature-name
 ```
 
-**If NOT ignored:**
-
-Per Jesse's rule "Fix broken things immediately":
-1. Add appropriate line to .gitignore
-2. Commit the change
-3. Proceed with worktree creation
-
-**Why critical:** Prevents accidentally committing worktree contents to repository.
-
-### For Global Directory (~/.config/superpowers/worktrees)
-
-No .gitignore verification needed - outside project entirely.
-
-## Creation Steps
-
-### 1. Detect Project Name
+### 3. Install Dependencies
 
 ```bash
-project=$(basename "$(git rev-parse --show-toplevel)")
+npm install
 ```
 
-### 2. Create Worktree
+### 4. Verify Clean State
 
 ```bash
-# Determine full path
-case $LOCATION in
-  .worktrees|worktrees)
-    path="$LOCATION/$BRANCH_NAME"
-    ;;
-  ~/.config/superpowers/worktrees/*)
-    path="~/.config/superpowers/worktrees/$project/$BRANCH_NAME"
-    ;;
-esac
-
-# Create worktree with new branch
-git worktree add "$path" -b "$BRANCH_NAME"
-cd "$path"
-```
-
-### 3. Run Project Setup
-
-Auto-detect and run appropriate setup:
-
-```bash
-# Node.js
-if [ -f package.json ]; then npm install; fi
-
-# Rust
-if [ -f Cargo.toml ]; then cargo build; fi
-
-# Python
-if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-if [ -f pyproject.toml ]; then poetry install; fi
-
-# Go
-if [ -f go.mod ]; then go mod download; fi
-```
-
-### 4. Verify Clean Baseline
-
-Run tests to ensure worktree starts clean:
-
-```bash
-# Examples - use project-appropriate command
 npm test
-cargo test
-pytest
-go test ./...
+npm run build
 ```
 
-**If tests fail:** Report failures, ask whether to proceed or investigate.
+Confirm everything passes before starting work.
 
-**If tests pass:** Report ready.
+### 5. Do Your Work
 
-### 5. Report Location
+Implement the feature following TDD and other skills.
 
+### 6. Commit Frequently
+
+```bash
+git add .
+git commit -m "feat: description of change"
 ```
-Worktree ready at <full-path>
-Tests passing (<N> tests, 0 failures)
-Ready to implement <feature-name>
+
+Small, frequent commits are better than large ones.
+
+### 7. Finish Work
+
+When done, use `finishing-a-development-branch` skill to:
+- Verify all tests pass
+- Decide: merge, create PR, keep, or discard
+- Clean up worktree
+
+## Benefits
+
+**Isolation:**
+- Each feature in separate directory
+- No conflicts between features
+- Can switch contexts instantly
+
+**Safety:**
+- Main/master always clean
+- Easy to abandon bad experiments
+- No risk of breaking production code
+
+**Parallel Development:**
+- Multiple features at once
+- Different branches for different tasks
+- No need to stash changes
+
+## Common Commands
+
+### List Worktrees
+
+```bash
+git worktree list
 ```
 
-## Quick Reference
+### Remove Worktree
 
-| Situation | Action |
-|-----------|--------|
-| `.worktrees/` exists | Use it (verify ignored) |
-| `worktrees/` exists | Use it (verify ignored) |
-| Both exist | Use `.worktrees/` |
-| Neither exists | Check CLAUDE.md → Ask user |
-| Directory not ignored | Add to .gitignore + commit |
-| Tests fail during baseline | Report failures + ask |
-| No package.json/Cargo.toml | Skip dependency install |
-
-## Common Mistakes
-
-### Skipping ignore verification
-
-- **Problem:** Worktree contents get tracked, pollute git status
-- **Fix:** Always use `git check-ignore` before creating project-local worktree
-
-### Assuming directory location
-
-- **Problem:** Creates inconsistency, violates project conventions
-- **Fix:** Follow priority: existing > CLAUDE.md > ask
-
-### Proceeding with failing tests
-
-- **Problem:** Can't distinguish new bugs from pre-existing issues
-- **Fix:** Report failures, get explicit permission to proceed
-
-### Hardcoding setup commands
-
-- **Problem:** Breaks on projects using different tools
-- **Fix:** Auto-detect from project files (package.json, etc.)
-
-## Example Workflow
-
+```bash
+git worktree remove ../prompt-app-feature-name
 ```
-You: I'm using the using-git-worktrees skill to set up an isolated workspace.
 
-[Check .worktrees/ - exists]
-[Verify ignored - git check-ignore confirms .worktrees/ is ignored]
-[Create worktree: git worktree add .worktrees/auth -b feature/auth]
-[Run npm install]
-[Run npm test - 47 passing]
+### Prune Stale Worktrees
 
-Worktree ready at /Users/jesse/myproject/.worktrees/auth
-Tests passing (47 tests, 0 failures)
-Ready to implement auth feature
+```bash
+git worktree prune
 ```
 
 ## Red Flags
 
 **Never:**
-- Create worktree without verifying it's ignored (project-local)
-- Skip baseline test verification
-- Proceed with failing tests without asking
-- Assume directory location when ambiguous
-- Skip CLAUDE.md check
+- Work directly on main/master
+- Skip creating worktree
+- Forget to verify clean state
+- Leave worktrees around after finishing
+- Have multiple worktrees on same branch
 
-**Always:**
-- Follow directory priority: existing > CLAUDE.md > ask
-- Verify directory is ignored for project-local
-- Auto-detect and run project setup
-- Verify clean test baseline
+## Integration with Other Skills
 
-## Integration
+- **writing-plans** → Create worktree after plan approval
+- **subagent-driven-development** → Each plan execution uses worktree
+- **finishing-a-development-branch** → Clean up worktree when done
+- **brainstorming** → Creates worktree during design phase
 
-**Called by:**
-- **brainstorming** (Phase 4) - REQUIRED when design is approved and implementation follows
-- **subagent-driven-development** - REQUIRED before executing any tasks
-- **executing-plans** - REQUIRED before executing any tasks
-- Any skill needing isolated workspace
+## Example Workflow
 
-**Pairs with:**
-- **finishing-a-development-branch** - REQUIRED for cleanup after work complete
+```bash
+# Start new feature
+git worktree add ../prompt-app-sync-improvement -b feature/sync-improvement
+cd ../prompt-app-sync-improvement
+npm install
+npm test  # Verify clean state
+
+# Do work...
+git add .
+git commit -m "feat: improve sync performance"
+
+# Finish
+git worktree remove ../prompt-app-sync-improvement
+git branch -d feature/sync-improvement  # After merge
+```
+
+## Final Rule
+
+```
+New feature = New worktree
+No worktree = Not started
+```
+
+**No exceptions without your human partner's explicit permission.**

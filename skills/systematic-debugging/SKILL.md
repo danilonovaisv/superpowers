@@ -1,9 +1,9 @@
 ---
 name: systematic-debugging
-description: Use when encountering any bug, test failure, or unexpected behavior, before proposing fixes
+description: Use when encountering any bug, test failure, or unexpected behavior in PROMPT-APP, before proposing fixes
 ---
 
-# Systematic Debugging
+# Systematic Debugging for PROMPT-APP
 
 ## Overview
 
@@ -24,12 +24,12 @@ If you haven't completed Phase 1, you cannot propose fixes.
 ## When to Use
 
 Use for ANY technical issue:
-- Test failures
-- Bugs in production
-- Unexpected behavior
-- Performance problems
-- Build failures
-- Integration issues
+- Test failures (Jest, Playwright)
+- Bugs in production (sync errors, import failures)
+- Unexpected behavior (UI rendering, API responses)
+- Performance problems (slow queries, memory leaks)
+- Build failures (TypeScript compilation, bundling)
+- Integration issues (Supabase, cloud functions)
 
 **Use this ESPECIALLY when:**
 - Under time pressure (emergencies make guessing tempting)
@@ -71,7 +71,7 @@ You MUST complete each phase before proceeding to the next.
 
 4. **Gather Evidence in Multi-Component Systems**
 
-   **WHEN system has multiple components (CI → build → signing, API → service → database):**
+   **WHEN system has multiple components (React UI → Services → Supabase DB):**
 
    **BEFORE proposing fixes, add diagnostic instrumentation:**
    ```
@@ -86,32 +86,28 @@ You MUST complete each phase before proceeding to the next.
    THEN investigate that specific component
    ```
 
-   **Example (multi-layer system):**
-   ```bash
-   # Layer 1: Workflow
-   echo "=== Secrets available in workflow: ==="
-   echo "IDENTITY: ${IDENTITY:+SET}${IDENTITY:-UNSET}"
+   **Example (PROMPT-APP sync flow):**
+   ```typescript
+   // Layer 1: UI Component
+   console.log("=== Sync triggered ===");
+   console.log("Prompts to sync:", prompts.length);
 
-   # Layer 2: Build script
-   echo "=== Env vars in build script: ==="
-   env | grep IDENTITY || echo "IDENTITY not in environment"
+   // Layer 2: Sync Service
+   console.log("=== SyncService.start() ===");
+   console.log("Supabase client initialized:", !!supabase);
 
-   # Layer 3: Signing script
-   echo "=== Keychain state: ==="
-   security list-keychains
-   security find-identity -v
-
-   # Layer 4: Actual signing
-   codesign --sign "$IDENTITY" --verbose=4 "$APP"
+   // Layer 3: Database Operation
+   console.log("=== Supabase upsert ===");
+   const { data, error } = await supabase.from('prompts').upsert(prompts);
+   console.log("Error:", error);
+   console.log("Data:", data);
    ```
 
-   **This reveals:** Which layer fails (secrets → workflow ✓, workflow → build ✗)
+   **This reveals:** Which layer fails (UI → Service ✓, Service → DB ✗)
 
 5. **Trace Data Flow**
 
    **WHEN error is deep in call stack:**
-
-   See `root-cause-tracing.md` in this directory for the complete backward tracing technique.
 
    **Quick version:**
    - Where does bad value originate?
@@ -176,7 +172,7 @@ You MUST complete each phase before proceeding to the next.
    - Automated test if possible
    - One-off test script if no framework
    - MUST have before fixing
-   - Use the `superpowers:test-driven-development` skill for writing proper failing tests
+   - Use the `test-driven-development` skill for writing proper failing tests
 
 2. **Implement Single Fix**
    - Address the root cause identified
@@ -231,17 +227,6 @@ If you catch yourself thinking:
 
 **If 3+ fixes failed:** Question the architecture (see Phase 4.5)
 
-## your human partner's Signals You're Doing It Wrong
-
-**Watch for these redirections:**
-- "Is that not happening?" - You assumed without verifying
-- "Will it show us...?" - You should have added evidence gathering
-- "Stop guessing" - You're proposing fixes without understanding
-- "Ultrathink this" - Question fundamentals, not just symptoms
-- "We're stuck?" (frustrated) - Your approach isn't working
-
-**When you see these:** STOP. Return to Phase 1.
-
 ## Common Rationalizations
 
 | Excuse | Reality |
@@ -277,15 +262,15 @@ If systematic investigation reveals issue is truly environmental, timing-depende
 
 ## Supporting Techniques
 
-These techniques are part of systematic debugging and available in this directory:
+These techniques are part of systematic debugging:
 
-- **`root-cause-tracing.md`** - Trace bugs backward through call stack to find original trigger
-- **`defense-in-depth.md`** - Add validation at multiple layers after finding root cause
-- **`condition-based-waiting.md`** - Replace arbitrary timeouts with condition polling
+- **Root Cause Tracing** - Trace bugs backward through call stack to find original trigger
+- **Defense in Depth** - Add validation at multiple layers after finding root cause
+- **Condition-Based Waiting** - Replace arbitrary timeouts with condition polling
 
 **Related skills:**
-- **superpowers:test-driven-development** - For creating failing test case (Phase 4, Step 1)
-- **superpowers:verification-before-completion** - Verify fix worked before claiming success
+- **test-driven-development** - For creating failing test case (Phase 4, Step 1)
+- **verification-before-completion** - Verify fix worked before claiming success
 
 ## Real-World Impact
 

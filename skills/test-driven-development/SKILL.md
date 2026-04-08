@@ -1,9 +1,9 @@
 ---
 name: test-driven-development
-description: Use when implementing any feature or bugfix, before writing implementation code
+description: Use when implementing any feature or bug fix in PROMPT-APP, before writing implementation code
 ---
 
-# Test-Driven Development (TDD)
+# Test-Driven Development (TDD) for PROMPT-APP
 
 ## Overview
 
@@ -16,10 +16,10 @@ Write the test first. Watch it fail. Write minimal code to pass.
 ## When to Use
 
 **Always:**
-- New features
-- Bug fixes
-- Refactoring
-- Behavior changes
+- New features (prompt templates, sync logic, UI components)
+- Bug fixes (import errors, sync failures, validation issues)
+- Refactoring (database queries, service methods)
+- Behavior changes (API responses, user workflows)
 
 **Exceptions (ask your human partner):**
 - Throwaway prototypes
@@ -44,29 +44,7 @@ Write code before the test? Delete it. Start over.
 
 Implement fresh from tests. Period.
 
-## Red-Green-Refactor
-
-```dot
-digraph tdd_cycle {
-    rankdir=LR;
-    red [label="RED\nWrite failing test", shape=box, style=filled, fillcolor="#ffcccc"];
-    verify_red [label="Verify fails\ncorrectly", shape=diamond];
-    green [label="GREEN\nMinimal code", shape=box, style=filled, fillcolor="#ccffcc"];
-    verify_green [label="Verify passes\nAll green", shape=diamond];
-    refactor [label="REFACTOR\nClean up", shape=box, style=filled, fillcolor="#ccccff"];
-    next [label="Next", shape=ellipse];
-
-    red -> verify_red;
-    verify_red -> green [label="yes"];
-    verify_red -> red [label="wrong\nfailure"];
-    green -> verify_green;
-    verify_green -> refactor [label="yes"];
-    verify_green -> green [label="no"];
-    refactor -> verify_green [label="stay\ngreen"];
-    verify_green -> next;
-    next -> red;
-}
-```
+## Red-Green-Refactor Cycle
 
 ### RED - Write Failing Test
 
@@ -74,17 +52,17 @@ Write one minimal test showing what should happen.
 
 <Good>
 ```typescript
-test('retries failed operations 3 times', async () => {
+test('retries failed Supabase operations 3 times', async () => {
   let attempts = 0;
   const operation = () => {
     attempts++;
-    if (attempts < 3) throw new Error('fail');
-    return 'success';
+    if (attempts < 3) throw new Error('Network error');
+    return { data: 'success' };
   };
 
-  const result = await retryOperation(operation);
+  const result = await retrySupabaseOperation(operation);
 
-  expect(result).toBe('success');
+  expect(result).toEqual({ data: 'success' });
   expect(attempts).toBe(3);
 });
 ```
@@ -98,7 +76,7 @@ test('retry works', async () => {
     .mockRejectedValueOnce(new Error())
     .mockRejectedValueOnce(new Error())
     .mockResolvedValueOnce('success');
-  await retryOperation(mock);
+  await retrySupabaseOperation(mock);
   expect(mock).toHaveBeenCalledTimes(3);
 });
 ```
@@ -133,7 +111,7 @@ Write simplest code to pass the test.
 
 <Good>
 ```typescript
-async function retryOperation<T>(fn: () => Promise<T>): Promise<T> {
+async function retrySupabaseOperation<T>(fn: () => Promise<T>): Promise<T> {
   for (let i = 0; i < 3; i++) {
     try {
       return await fn();
@@ -149,7 +127,7 @@ Just enough to pass
 
 <Bad>
 ```typescript
-async function retryOperation<T>(
+async function retrySupabaseOperation<T>(
   fn: () => Promise<T>,
   options?: {
     maxRetries?: number;
@@ -157,7 +135,7 @@ async function retryOperation<T>(
     onRetry?: (attempt: number) => void;
   }
 ): Promise<T> {
-  // YAGNI
+  // YAGNI - over-engineered
 }
 ```
 Over-engineered
@@ -195,7 +173,7 @@ Keep tests green. Don't add behavior.
 
 Next failing test for next feature.
 
-## Good Tests
+## Good Tests for PROMPT-APP
 
 | Quality | Good | Bad |
 |---------|------|-----|
@@ -233,40 +211,16 @@ Sunk cost fallacy. The time is already gone. Your choice now:
 
 The "waste" is keeping code you can't trust. Working code without real tests is technical debt.
 
-**"TDD is dogmatic, being pragmatic means adapting"**
-
-TDD IS pragmatic:
-- Finds bugs before commit (faster than debugging after)
-- Prevents regressions (tests catch breaks immediately)
-- Documents behavior (tests show how to use code)
-- Enables refactoring (change freely, tests catch breaks)
-
-"Pragmatic" shortcuts = debugging in production = slower.
-
-**"Tests after achieve the same goals - it's spirit not ritual"**
-
-No. Tests-after answer "What does this do?" Tests-first answer "What should this do?"
-
-Tests-after are biased by your implementation. You test what you built, not what's required. You verify remembered edge cases, not discovered ones.
-
-Tests-first force edge case discovery before implementing. Tests-after verify you remembered everything (you didn't).
-
-30 minutes of tests after ≠ TDD. You get coverage, lose proof tests work.
-
 ## Common Rationalizations
 
 | Excuse | Reality |
 |--------|---------|
 | "Too simple to test" | Simple code breaks. Test takes 30 seconds. |
 | "I'll test after" | Tests passing immediately prove nothing. |
-| "Tests after achieve same goals" | Tests-after = "what does this do?" Tests-first = "what should this do?" |
 | "Already manually tested" | Ad-hoc ≠ systematic. No record, can't re-run. |
-| "Deleting X hours is wasteful" | Sunk cost fallacy. Keeping unverified code is technical debt. |
 | "Keep as reference, write tests first" | You'll adapt it. That's testing after. Delete means delete. |
 | "Need to explore first" | Fine. Throw away exploration, start with TDD. |
 | "Test hard = design unclear" | Listen to test. Hard to test = hard to use. |
-| "TDD will slow me down" | TDD faster than debugging. Pragmatic = test-first. |
-| "Manual test faster" | Manual doesn't prove edge cases. You'll re-test every change. |
 | "Existing code has no tests" | You're improving it. Add tests for existing code. |
 
 ## Red Flags - STOP and Start Over
@@ -278,38 +232,34 @@ Tests-first force edge case discovery before implementing. Tests-after verify yo
 - Tests added "later"
 - Rationalizing "just this once"
 - "I already manually tested it"
-- "Tests after achieve the same purpose"
-- "It's about spirit not ritual"
 - "Keep as reference" or "adapt existing code"
 - "Already spent X hours, deleting is wasteful"
-- "TDD is dogmatic, I'm being pragmatic"
-- "This is different because..."
 
 **All of these mean: Delete code. Start over with TDD.**
 
-## Example: Bug Fix
+## Example: Bug Fix in Prompt Validation
 
-**Bug:** Empty email accepted
+**Bug:** Empty prompt accepted in database
 
 **RED**
 ```typescript
-test('rejects empty email', async () => {
-  const result = await submitForm({ email: '' });
-  expect(result.error).toBe('Email required');
+test('rejects empty prompt text', async () => {
+  const result = await validatePrompt({ text: '', tags: [] });
+  expect(result.error).toBe('Prompt text is required');
 });
 ```
 
 **Verify RED**
 ```bash
-$ npm test
-FAIL: expected 'Email required', got undefined
+$ npm test src/utils/promptValidator.test.ts
+FAIL: expected 'Prompt text is required', got undefined
 ```
 
 **GREEN**
 ```typescript
-function submitForm(data: FormData) {
-  if (!data.email?.trim()) {
-    return { error: 'Email required' };
+function validatePrompt(data: PromptData) {
+  if (!data.text?.trim()) {
+    return { error: 'Prompt text is required' };
   }
   // ...
 }
@@ -317,7 +267,7 @@ function submitForm(data: FormData) {
 
 **Verify GREEN**
 ```bash
-$ npm test
+$ npm test src/utils/promptValidator.test.ts
 PASS
 ```
 
@@ -356,7 +306,7 @@ Never fix bugs without a test.
 
 ## Testing Anti-Patterns
 
-When adding mocks or test utilities, read @testing-anti-patterns.md to avoid common pitfalls:
+When adding mocks or test utilities, avoid common pitfalls:
 - Testing mock behavior instead of real behavior
 - Adding test-only methods to production classes
 - Mocking without understanding dependencies

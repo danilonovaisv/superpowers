@@ -1,139 +1,235 @@
 ---
 name: verification-before-completion
-description: Use when about to claim work is complete, fixed, or passing, before committing or creating PRs - requires running verification commands and confirming output before making any success claims; evidence before assertions always
+description: Use before declaring any task complete in PROMPT-APP, to ensure work is actually done correctly
 ---
 
-# Verification Before Completion
+# Verification Before Completion for PROMPT-APP
 
 ## Overview
 
-Claiming work is complete without verification is dishonesty, not efficiency.
+Never claim success without evidence. Verification is mandatory, not optional.
 
-**Core principle:** Evidence before claims, always.
+**Core principle:** Evidence before claims. Run verification commands before saying "done".
 
-**Violating the letter of this rule is violating the spirit of this rule.**
+**Violating this rule means you haven't finished the task.**
+
+## When to Use
+
+**Always, before marking any task complete:**
+- After implementing a feature
+- After fixing a bug
+- After refactoring code
+- After updating configuration
+- After adding tests
+
+**No exceptions.** If you can't verify it, you can't claim it's done.
 
 ## The Iron Law
 
 ```
-NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE
+NO CLAIMS OF COMPLETION WITHOUT VERIFICATION EVIDENCE
 ```
 
-If you haven't run the verification command in this message, you cannot claim it passes.
+## Verification Checklist
 
-## The Gate Function
+Before saying "done", you MUST:
 
-```
-BEFORE claiming any status or expressing satisfaction:
+### 1. Run Tests
 
-1. IDENTIFY: What command proves this claim?
-2. RUN: Execute the FULL command (fresh, complete)
-3. READ: Full output, check exit code, count failures
-4. VERIFY: Does output confirm the claim?
-   - If NO: State actual status with evidence
-   - If YES: State claim WITH evidence
-5. ONLY THEN: Make the claim
-
-Skip any step = lying, not verifying
+```bash
+npm test
 ```
 
-## Common Failures
+Confirm:
+- All tests pass
+- No new test failures
+- Output is clean (no warnings, errors)
 
-| Claim | Requires | Not Sufficient |
-|-------|----------|----------------|
-| Tests pass | Test command output: 0 failures | Previous run, "should pass" |
-| Linter clean | Linter output: 0 errors | Partial check, extrapolation |
-| Build succeeds | Build command: exit 0 | Linter passing, logs look good |
-| Bug fixed | Test original symptom: passes | Code changed, assumed fixed |
-| Regression test works | Red-green cycle verified | Test passes once |
-| Agent completed | VCS diff shows changes | Agent reports "success" |
-| Requirements met | Line-by-line checklist | Tests passing |
+**If tests fail:** Fix them. Don't claim completion.
 
-## Red Flags - STOP
+### 2. Build Project
 
-- Using "should", "probably", "seems to"
-- Expressing satisfaction before verification ("Great!", "Perfect!", "Done!", etc.)
-- About to commit/push/PR without verification
-- Trusting agent success reports
-- Relying on partial verification
-- Thinking "just this once"
-- Tired and wanting work over
-- **ANY wording implying success without having run verification**
-
-## Rationalization Prevention
-
-| Excuse | Reality |
-|--------|---------|
-| "Should work now" | RUN the verification |
-| "I'm confident" | Confidence ≠ evidence |
-| "Just this once" | No exceptions |
-| "Linter passed" | Linter ≠ compiler |
-| "Agent said success" | Verify independently |
-| "I'm tired" | Exhaustion ≠ excuse |
-| "Partial check is enough" | Partial proves nothing |
-| "Different words so rule doesn't apply" | Spirit over letter |
-
-## Key Patterns
-
-**Tests:**
-```
-✅ [Run test command] [See: 34/34 pass] "All tests pass"
-❌ "Should pass now" / "Looks correct"
+```bash
+npm run build
 ```
 
-**Regression tests (TDD Red-Green):**
-```
-✅ Write → Run (pass) → Revert fix → Run (MUST FAIL) → Restore → Run (pass)
-❌ "I've written a regression test" (without red-green verification)
-```
+Confirm:
+- Build succeeds
+- No TypeScript errors
+- No bundling errors
+- Output files generated
 
-**Build:**
-```
-✅ [Run build] [See: exit 0] "Build passes"
-❌ "Linter passed" (linter doesn't check compilation)
-```
+**If build fails:** Fix it. Don't claim completion.
 
-**Requirements:**
-```
-✅ Re-read plan → Create checklist → Verify each → Report gaps or completion
-❌ "Tests pass, phase complete"
+### 3. Lint Code
+
+```bash
+npm run lint
 ```
 
-**Agent delegation:**
+Confirm:
+- No code style errors
+- Code follows project conventions
+- No unused imports or variables
+
+**If lint fails:** Fix it. Don't claim completion.
+
+### 4. Verify Specific Requirements
+
+For each requirement in the task:
+- Can you demonstrate it works?
+- Can you show evidence (test output, screenshots, logs)?
+- Did you test edge cases?
+
+### 5. Check for Regressions
+
+- Did other tests still pass?
+- Did you break existing functionality?
+- Are there any side effects?
+
+## Common Verification Commands for PROMPT-APP
+
+### Unit Tests
+```bash
+npm test
+npm test -- path/to/specific.test.ts
 ```
-✅ Agent reports success → Check VCS diff → Verify changes → Report actual state
-❌ Trust agent report
+
+### Integration Tests
+```bash
+npm run test:integration
 ```
 
-## Why This Matters
+### End-to-End Tests
+```bash
+npm run test:e2e
+npx playwright test
+```
 
-From 24 failure memories:
-- your human partner said "I don't believe you" - trust broken
-- Undefined functions shipped - would crash
-- Missing requirements shipped - incomplete features
-- Time wasted on false completion → redirect → rework
-- Violates: "Honesty is a core value. If you lie, you'll be replaced."
+### Type Checking
+```bash
+npx tsc --noEmit
+```
 
-## When To Apply
+### Build
+```bash
+npm run build
+```
 
-**ALWAYS before:**
-- ANY variation of success/completion claims
-- ANY expression of satisfaction
-- ANY positive statement about work state
-- Committing, PR creation, task completion
-- Moving to next task
-- Delegating to agents
+### Code Style Check
+```bash
+npm run lint
+npm run lint:fix
+```
 
-**Rule applies to:**
-- Exact phrases
-- Paraphrases and synonyms
-- Implications of success
-- ANY communication suggesting completion/correctness
+### Database Migrations
+```bash
+npm run db:migrate
+npm run db:check
+```
 
-## The Bottom Line
+## Red Flags - STOP and Verify
 
-**No shortcuts for verification.**
+If you catch yourself thinking:
+- "Tests should pass" → **Run them**
+- "Build will probably work" → **Build it**
+- "I manually tested it" → **Write automated test**
+- "It worked last time" → **Verify again**
+- "I'll verify later" → **Verify now**
+- "Close enough" → **Not acceptable**
 
-Run the command. Read the output. THEN claim the result.
+**ALL of these mean: STOP. Run verification commands.**
 
-This is non-negotiable.
+## Example: Feature Implementation
+
+**Task:** Add prompt validation
+
+**WRONG (no verification):**
+```
+✅ Done! Added prompt validation.
+```
+
+**RIGHT (with verification):**
+```
+Running verification...
+
+$ npm test src/utils/promptValidator.test.ts
+PASS ✓ Validates empty text
+PASS ✓ Validates missing tags
+PASS ✓ Accepts valid prompt
+
+$ npx tsc --noEmit
+✓ No TypeScript errors
+
+$ npm run lint
+✓ No linting issues
+
+✅ Complete! All tests pass, no type errors, clean lint.
+```
+
+## Example: Bug Fix
+
+**Task:** Fix sync service memory leak
+
+**WRONG (no verification):**
+```
+✅ Fixed the memory leak in syncService.
+```
+
+**RIGHT (with verification):**
+```
+Running verification...
+
+$ npm test src/services/syncService.test.ts
+PASS ✓ Releases database connections
+PASS ✓ Clears cache after sync
+PASS ✓ No memory growth over 100 iterations
+
+$ npm run build
+✓ Build successful
+✓ Bundle size unchanged
+
+✅ Complete! Memory leak fixed, all tests pass, build clean.
+```
+
+## What Counts as Evidence
+
+**Good evidence:**
+- Test output showing PASS
+- Build output showing success
+- Lint output showing no errors
+- Screenshots of working UI
+- Log output showing correct behavior
+- Performance metrics showing improvement
+
+**Bad evidence (not acceptable):**
+- "I think it works"
+- "It should be fine"
+- "I tested it manually"
+- "Looks good to me"
+- No output at all
+
+## When Verification Fails
+
+If verification shows problems:
+
+1. **Don't claim completion**
+2. **Fix the issue**
+3. **Re-run verification**
+4. **Repeat until clean**
+
+## Integration with Other Skills
+
+- **test-driven-development** → Verification includes running the tests you wrote
+- **systematic-debugging** → Verification proves the bug is actually fixed
+- **subagent-driven-development** → Each subagent must verify their task
+- **writing-plans** → Plans should include verification steps
+
+## Final Rule
+
+```
+Claimed done = Verification evidence provided
+No evidence = Not done
+```
+
+**No exceptions without your human partner's explicit permission.**
