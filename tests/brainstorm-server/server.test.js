@@ -15,7 +15,10 @@ const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 
-const SERVER_PATH = path.join(__dirname, '../../skills/brainstorming/scripts/server.cjs');
+const SERVER_PATH = path.join(
+  __dirname,
+  '../../skills/brainstorming/scripts/server.cjs'
+);
 const TEST_PORT = 3334;
 const TEST_DIR = '/tmp/brainstorm-test';
 const CONTENT_DIR = path.join(TEST_DIR, 'content');
@@ -28,26 +31,34 @@ function cleanup() {
 }
 
 async function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function fetch(url) {
   return new Promise((resolve, reject) => {
-    http.get(url, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => resolve({
-        status: res.statusCode,
-        headers: res.headers,
-        body: data
-      }));
-    }).on('error', reject);
+    http
+      .get(url, (res) => {
+        let data = '';
+        res.on('data', (chunk) => (data += chunk));
+        res.on('end', () =>
+          resolve({
+            status: res.statusCode,
+            headers: res.headers,
+            body: data,
+          })
+        );
+      })
+      .on('error', reject);
   });
 }
 
 function startServer() {
   return spawn('node', [SERVER_PATH], {
-    env: { ...process.env, BRAINSTORM_PORT: TEST_PORT, BRAINSTORM_DIR: TEST_DIR }
+    env: {
+      ...process.env,
+      BRAINSTORM_PORT: TEST_PORT,
+      BRAINSTORM_DIR: TEST_DIR,
+    },
   });
 }
 
@@ -62,10 +73,15 @@ async function waitForServer(server) {
         resolve({ stdout, stderr, getStdout: () => stdout });
       }
     });
-    server.stderr.on('data', (data) => { stderr += data.toString(); });
+    server.stderr.on('data', (data) => {
+      stderr += data.toString();
+    });
     server.on('error', reject);
 
-    setTimeout(() => reject(new Error(`Server didn't start. stderr: ${stderr}`)), 5000);
+    setTimeout(
+      () => reject(new Error(`Server didn't start. stderr: ${stderr}`)),
+      5000
+    );
   });
 }
 
@@ -74,21 +90,25 @@ async function runTests() {
 
   const server = startServer();
   let stdoutAccum = '';
-  server.stdout.on('data', (data) => { stdoutAccum += data.toString(); });
+  server.stdout.on('data', (data) => {
+    stdoutAccum += data.toString();
+  });
 
   const { stdout: initialStdout } = await waitForServer(server);
   let passed = 0;
   let failed = 0;
 
   function test(name, fn) {
-    return fn().then(() => {
-      console.log(`  PASS: ${name}`);
-      passed++;
-    }).catch(e => {
-      console.log(`  FAIL: ${name}`);
-      console.log(`    ${e.message}`);
-      failed++;
-    });
+    return fn()
+      .then(() => {
+        console.log(`  PASS: ${name}`);
+        passed++;
+      })
+      .catch((e) => {
+        console.log(`  FAIL: ${name}`);
+        console.log(`    ${e.message}`);
+        failed++;
+      });
   }
 
   try {
@@ -110,8 +130,16 @@ async function runTests() {
       const info = JSON.parse(fs.readFileSync(infoPath, 'utf-8').trim());
       assert.strictEqual(info.type, 'server-started');
       assert.strictEqual(info.port, TEST_PORT);
-      assert.strictEqual(info.screen_dir, CONTENT_DIR, 'screen_dir should point to content/');
-      assert.strictEqual(info.state_dir, STATE_DIR, 'state_dir should point to state/');
+      assert.strictEqual(
+        info.screen_dir,
+        CONTENT_DIR,
+        'screen_dir should point to content/'
+      );
+      assert.strictEqual(
+        info.state_dir,
+        STATE_DIR,
+        'state_dir should point to state/'
+      );
       return Promise.resolve();
     });
 
@@ -121,42 +149,74 @@ async function runTests() {
     await test('serves waiting page when no screens exist', async () => {
       const res = await fetch(`http://localhost:${TEST_PORT}/`);
       assert.strictEqual(res.status, 200);
-      assert(res.body.includes('Waiting for the agent'), 'Should show waiting message');
+      assert(
+        res.body.includes('Waiting for the agent'),
+        'Should show waiting message'
+      );
     });
 
     await test('injects helper.js into waiting page', async () => {
       const res = await fetch(`http://localhost:${TEST_PORT}/`);
       assert(res.body.includes('WebSocket'), 'Should have helper.js injected');
-      assert(res.body.includes('toggleSelect'), 'Should have toggleSelect from helper');
-      assert(res.body.includes('brainstorm'), 'Should have brainstorm API from helper');
+      assert(
+        res.body.includes('toggleSelect'),
+        'Should have toggleSelect from helper'
+      );
+      assert(
+        res.body.includes('brainstorm'),
+        'Should have brainstorm API from helper'
+      );
     });
 
     await test('returns Content-Type text/html', async () => {
       const res = await fetch(`http://localhost:${TEST_PORT}/`);
-      assert(res.headers['content-type'].includes('text/html'), 'Should be text/html');
+      assert(
+        res.headers['content-type'].includes('text/html'),
+        'Should be text/html'
+      );
     });
 
     await test('serves full HTML documents as-is (not wrapped)', async () => {
-      const fullDoc = '<!DOCTYPE html>\n<html><head><title>Custom</title></head><body><h1>Custom Page</h1></body></html>';
+      const fullDoc =
+        '<!DOCTYPE html>\n<html><head><title>Custom</title></head><body><h1>Custom Page</h1></body></html>';
       fs.writeFileSync(path.join(CONTENT_DIR, 'full-doc.html'), fullDoc);
       await sleep(300);
 
       const res = await fetch(`http://localhost:${TEST_PORT}/`);
-      assert(res.body.includes('<h1>Custom Page</h1>'), 'Should contain original content');
+      assert(
+        res.body.includes('<h1>Custom Page</h1>'),
+        'Should contain original content'
+      );
       assert(res.body.includes('WebSocket'), 'Should still inject helper.js');
-      assert(!res.body.includes('indicator-bar'), 'Should NOT wrap in frame template');
+      assert(
+        !res.body.includes('indicator-bar'),
+        'Should NOT wrap in frame template'
+      );
     });
 
     await test('wraps content fragments in frame template', async () => {
-      const fragment = '<h2>Pick a layout</h2>\n<div class="options"><div class="option" data-choice="a"><div class="letter">A</div></div></div>';
+      const fragment =
+        '<h2>Pick a layout</h2>\n<div class="options"><div class="option" data-choice="a"><div class="letter">A</div></div></div>';
       fs.writeFileSync(path.join(CONTENT_DIR, 'fragment.html'), fragment);
       await sleep(300);
 
       const res = await fetch(`http://localhost:${TEST_PORT}/`);
-      assert(res.body.includes('indicator-bar'), 'Fragment should get indicator bar');
-      assert(!res.body.includes('<!-- CONTENT -->'), 'Placeholder should be replaced');
-      assert(res.body.includes('Pick a layout'), 'Fragment content should be present');
-      assert(res.body.includes('data-choice="a"'), 'Fragment interactive elements intact');
+      assert(
+        res.body.includes('indicator-bar'),
+        'Fragment should get indicator bar'
+      );
+      assert(
+        !res.body.includes('<!-- CONTENT -->'),
+        'Placeholder should be replaced'
+      );
+      assert(
+        res.body.includes('Pick a layout'),
+        'Fragment content should be present'
+      );
+      assert(
+        res.body.includes('data-choice="a"'),
+        'Fragment interactive elements intact'
+      );
     });
 
     await test('serves newest file by mtime', async () => {
@@ -199,12 +259,15 @@ async function runTests() {
     await test('relays user events to stdout with source field', async () => {
       stdoutAccum = '';
       const ws = new WebSocket(`ws://localhost:${TEST_PORT}`);
-      await new Promise(resolve => ws.on('open', resolve));
+      await new Promise((resolve) => ws.on('open', resolve));
 
       ws.send(JSON.stringify({ type: 'click', text: 'Test Button' }));
       await sleep(300);
 
-      assert(stdoutAccum.includes('"source":"user-event"'), 'Should tag with source');
+      assert(
+        stdoutAccum.includes('"source":"user-event"'),
+        'Should tag with source'
+      );
       assert(stdoutAccum.includes('Test Button'), 'Should include event data');
       ws.close();
     });
@@ -215,7 +278,7 @@ async function runTests() {
       if (fs.existsSync(eventsFile)) fs.unlinkSync(eventsFile);
 
       const ws = new WebSocket(`ws://localhost:${TEST_PORT}`);
-      await new Promise(resolve => ws.on('open', resolve));
+      await new Promise((resolve) => ws.on('open', resolve));
 
       ws.send(JSON.stringify({ type: 'click', choice: 'b', text: 'Option B' }));
       await sleep(300);
@@ -233,13 +296,16 @@ async function runTests() {
       if (fs.existsSync(eventsFile)) fs.unlinkSync(eventsFile);
 
       const ws = new WebSocket(`ws://localhost:${TEST_PORT}`);
-      await new Promise(resolve => ws.on('open', resolve));
+      await new Promise((resolve) => ws.on('open', resolve));
 
       ws.send(JSON.stringify({ type: 'hover', text: 'Something' }));
       await sleep(300);
 
       // Non-choice events should not create .events file
-      assert(!fs.existsSync(eventsFile), '.events should not exist for non-choice events');
+      assert(
+        !fs.existsSync(eventsFile),
+        '.events should not exist for non-choice events'
+      );
       ws.close();
     });
 
@@ -247,8 +313,8 @@ async function runTests() {
       const ws1 = new WebSocket(`ws://localhost:${TEST_PORT}`);
       const ws2 = new WebSocket(`ws://localhost:${TEST_PORT}`);
       await Promise.all([
-        new Promise(resolve => ws1.on('open', resolve)),
-        new Promise(resolve => ws2.on('open', resolve))
+        new Promise((resolve) => ws1.on('open', resolve)),
+        new Promise((resolve) => ws2.on('open', resolve)),
       ]);
 
       let ws1Reload = false;
@@ -260,7 +326,10 @@ async function runTests() {
         if (JSON.parse(data.toString()).type === 'reload') ws2Reload = true;
       });
 
-      fs.writeFileSync(path.join(CONTENT_DIR, 'multi-client.html'), '<h2>Multi</h2>');
+      fs.writeFileSync(
+        path.join(CONTENT_DIR, 'multi-client.html'),
+        '<h2>Multi</h2>'
+      );
       await sleep(500);
 
       assert(ws1Reload, 'Client 1 should receive reload');
@@ -271,19 +340,22 @@ async function runTests() {
 
     await test('cleans up closed clients from broadcast list', async () => {
       const ws1 = new WebSocket(`ws://localhost:${TEST_PORT}`);
-      await new Promise(resolve => ws1.on('open', resolve));
+      await new Promise((resolve) => ws1.on('open', resolve));
       ws1.close();
       await sleep(100);
 
       // This should not throw even though ws1 is closed
-      fs.writeFileSync(path.join(CONTENT_DIR, 'after-close.html'), '<h2>After</h2>');
+      fs.writeFileSync(
+        path.join(CONTENT_DIR, 'after-close.html'),
+        '<h2>After</h2>'
+      );
       await sleep(300);
       // If we got here without error, the test passes
     });
 
     await test('handles malformed JSON from client gracefully', async () => {
       const ws = new WebSocket(`ws://localhost:${TEST_PORT}`);
-      await new Promise(resolve => ws.on('open', resolve));
+      await new Promise((resolve) => ws.on('open', resolve));
 
       // Send invalid JSON — server should not crash
       ws.send('not json at all {{{');
@@ -300,14 +372,17 @@ async function runTests() {
 
     await test('sends reload on new .html file', async () => {
       const ws = new WebSocket(`ws://localhost:${TEST_PORT}`);
-      await new Promise(resolve => ws.on('open', resolve));
+      await new Promise((resolve) => ws.on('open', resolve));
 
       let gotReload = false;
       ws.on('message', (data) => {
         if (JSON.parse(data.toString()).type === 'reload') gotReload = true;
       });
 
-      fs.writeFileSync(path.join(CONTENT_DIR, 'watch-new.html'), '<h2>New</h2>');
+      fs.writeFileSync(
+        path.join(CONTENT_DIR, 'watch-new.html'),
+        '<h2>New</h2>'
+      );
       await sleep(500);
 
       assert(gotReload, 'Should send reload on new file');
@@ -320,7 +395,7 @@ async function runTests() {
       await sleep(500);
 
       const ws = new WebSocket(`ws://localhost:${TEST_PORT}`);
-      await new Promise(resolve => ws.on('open', resolve));
+      await new Promise((resolve) => ws.on('open', resolve));
 
       let gotReload = false;
       ws.on('message', (data) => {
@@ -336,7 +411,7 @@ async function runTests() {
 
     await test('does NOT send reload for non-.html files', async () => {
       const ws = new WebSocket(`ws://localhost:${TEST_PORT}`);
-      await new Promise(resolve => ws.on('open', resolve));
+      await new Promise((resolve) => ws.on('open', resolve));
 
       let gotReload = false;
       ws.on('message', (data) => {
@@ -356,10 +431,16 @@ async function runTests() {
       fs.writeFileSync(eventsFile, '{"choice":"a"}\n');
       assert(fs.existsSync(eventsFile));
 
-      fs.writeFileSync(path.join(CONTENT_DIR, 'clear-events.html'), '<h2>New screen</h2>');
+      fs.writeFileSync(
+        path.join(CONTENT_DIR, 'clear-events.html'),
+        '<h2>New screen</h2>'
+      );
       await sleep(500);
 
-      assert(!fs.existsSync(eventsFile), 'state/events should be cleared on new screen');
+      assert(
+        !fs.existsSync(eventsFile),
+        'state/events should be cleared on new screen'
+      );
     });
 
     await test('logs screen-added on new file', async () => {
@@ -379,7 +460,10 @@ async function runTests() {
       fs.writeFileSync(filePath, '<h2>V2</h2>');
       await sleep(500);
 
-      assert(stdoutAccum.includes('screen-updated'), 'Should log screen-updated');
+      assert(
+        stdoutAccum.includes('screen-updated'),
+        'Should log screen-updated'
+      );
     });
 
     // ========== Helper.js Content ==========
@@ -387,12 +471,22 @@ async function runTests() {
 
     await test('helper.js defines required APIs', () => {
       const helperContent = fs.readFileSync(
-        path.join(__dirname, '../../skills/brainstorming/scripts/helper.js'), 'utf-8'
+        path.join(__dirname, '../../skills/brainstorming/scripts/helper.js'),
+        'utf-8'
       );
-      assert(helperContent.includes('toggleSelect'), 'Should define toggleSelect');
+      assert(
+        helperContent.includes('toggleSelect'),
+        'Should define toggleSelect'
+      );
       assert(helperContent.includes('sendEvent'), 'Should define sendEvent');
-      assert(helperContent.includes('selectedChoice'), 'Should track selectedChoice');
-      assert(helperContent.includes('brainstorm'), 'Should expose brainstorm API');
+      assert(
+        helperContent.includes('selectedChoice'),
+        'Should track selectedChoice'
+      );
+      assert(
+        helperContent.includes('brainstorm'),
+        'Should expose brainstorm API'
+      );
       return Promise.resolve();
     });
 
@@ -401,19 +495,28 @@ async function runTests() {
 
     await test('frame template has required structure', () => {
       const template = fs.readFileSync(
-        path.join(__dirname, '../../skills/brainstorming/scripts/frame-template.html'), 'utf-8'
+        path.join(
+          __dirname,
+          '../../skills/brainstorming/scripts/frame-template.html'
+        ),
+        'utf-8'
       );
       assert(template.includes('indicator-bar'), 'Should have indicator bar');
       assert(template.includes('indicator-text'), 'Should have indicator text');
-      assert(template.includes('<!-- CONTENT -->'), 'Should have content placeholder');
-      assert(template.includes('claude-content'), 'Should have content container');
+      assert(
+        template.includes('<!-- CONTENT -->'),
+        'Should have content placeholder'
+      );
+      assert(
+        template.includes('claude-content'),
+        'Should have content container'
+      );
       return Promise.resolve();
     });
 
     // ========== Summary ==========
     console.log(`\n--- Results: ${passed} passed, ${failed} failed ---`);
     if (failed > 0) process.exit(1);
-
   } finally {
     server.kill();
     await sleep(100);
@@ -421,7 +524,7 @@ async function runTests() {
   }
 }
 
-runTests().catch(err => {
+runTests().catch((err) => {
   console.error('Test failed:', err);
   process.exit(1);
 });

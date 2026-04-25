@@ -49,8 +49,8 @@ src/
 
 ```typescript
 interface Todo {
-  id: string;        // UUID
-  text: string;      // Todo text
+  id: string; // UUID
+  text: string; // Todo text
   completed: boolean;
 }
 
