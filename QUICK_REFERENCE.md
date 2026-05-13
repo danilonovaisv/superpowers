@@ -11,10 +11,12 @@ Brainstorm → Plan → Worktree → Develop (TDD + Reviews) → Verify → Fini
 ## 📋 Skills Cheat Sheet
 
 ### 1️⃣ Test-Driven Development (TDD)
+
 **Trigger:** Writing any code  
 **Command:** "Use TDD for this feature"
 
 **Cycle:**
+
 1. Write failing test ✗
 2. Watch it fail (verify)
 3. Write minimal code ✓
@@ -27,10 +29,12 @@ Brainstorm → Plan → Worktree → Develop (TDD + Reviews) → Verify → Fini
 ---
 
 ### 2️⃣ Systematic Debugging
+
 **Trigger:** Any bug or error  
 **Command:** "Debug this systematically"
 
 **4 Phases:**
+
 1. **Root Cause Investigation** - Read errors, reproduce, gather evidence
 2. **Pattern Analysis** - Find working examples, compare
 3. **Hypothesis Testing** - Form theory, test minimally
@@ -41,10 +45,12 @@ Brainstorm → Plan → Worktree → Develop (TDD + Reviews) → Verify → Fini
 ---
 
 ### 3️⃣ Writing Plans
+
 **Trigger:** Multi-step feature  
 **Command:** "Create implementation plan"
 
 **Structure:**
+
 - Header with goal/architecture/tech stack
 - File structure mapping
 - Bite-sized tasks (2-5 min each)
@@ -56,10 +62,12 @@ Brainstorm → Plan → Worktree → Develop (TDD + Reviews) → Verify → Fini
 ---
 
 ### 4️⃣ Subagent-Driven Development
+
 **Trigger:** Executing approved plan  
 **Command:** "Execute plan with subagents"
 
 **Process:**
+
 1. Extract all tasks from plan
 2. For each task:
    - Dispatch implementer subagent
@@ -74,10 +82,12 @@ Brainstorm → Plan → Worktree → Develop (TDD + Reviews) → Verify → Fini
 ---
 
 ### 5️⃣ Verification Before Completion
+
 **Trigger:** Claiming task done  
 **Command:** "Verify this is complete"
 
 **Checklist:**
+
 ```bash
 npm test          # All tests pass?
 npm run build     # Build succeeds?
@@ -89,10 +99,12 @@ npm run lint      # Clean lint?
 ---
 
 ### 6️⃣ Using Git Worktrees
+
 **Trigger:** Starting new work  
 **Command:** "Create worktree for this feature"
 
 **Setup:**
+
 ```bash
 git worktree add ../prompt-app-feature -b feature/name
 cd ../prompt-app-feature
@@ -105,10 +117,12 @@ npm test  # Verify clean
 ---
 
 ### 7️⃣ Finishing Development Branch
+
 **Trigger:** Work complete  
 **Command:** "Finish this branch"
 
 **Steps:**
+
 1. Verify all tests pass
 2. Run build
 3. Check lint
@@ -123,20 +137,21 @@ npm test  # Verify clean
 
 ## 🎯 When to Use Each Skill
 
-| Situation | Skill |
-|-----------|-------|
+| Situation            | Skill                                   |
+| -------------------- | --------------------------------------- |
 | Starting new feature | `using-git-worktrees` → `writing-plans` |
-| Writing code | `test-driven-development` |
-| Encountering bug | `systematic-debugging` |
-| Executing plan | `subagent-driven-development` |
-| Task supposedly done | `verification-before-completion` |
-| Feature complete | `finishing-a-development-branch` |
+| Writing code         | `test-driven-development`               |
+| Encountering bug     | `systematic-debugging`                  |
+| Executing plan       | `subagent-driven-development`           |
+| Task supposedly done | `verification-before-completion`        |
+| Feature complete     | `finishing-a-development-branch`        |
 
 ---
 
 ## ⚡ Quick Commands
 
 ### Start New Feature
+
 ```bash
 git worktree add ../prompt-app-new-feature -b feature/new-feature
 cd ../prompt-app-new-feature
@@ -145,11 +160,13 @@ npm test
 ```
 
 ### Run All Verifications
+
 ```bash
 npm test && npm run build && npm run lint
 ```
 
 ### Clean Up Worktree
+
 ```bash
 git worktree remove ../prompt-app-feature-name
 git branch -d feature/feature-name
@@ -171,6 +188,7 @@ git branch -d feature/feature-name
 ## ✅ Quality Gates
 
 Every change must pass:
+
 1. ✓ Tests written first (TDD)
 2. ✓ Spec compliance review
 3. ✓ Code quality review
